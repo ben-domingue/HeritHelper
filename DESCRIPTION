@@ -1,0 +1,11 @@
+Package: HeritHelper
+Title: Helping with the computation of heritabilities using GCTA (on ozzy).
+Version: 0.0.1
+Date: 2013-10-01
+Author: Ben Domingue <ben.domingue@gmail.com>
+Maintainer: Ben Domingue <ben.domingue@gmail.com>
+Depends: R (>= 2.1.0), 
+Suggests: 
+Description: Black Sabbath Sucks.
+LazyData: No
+License: GPL (>= 2)
