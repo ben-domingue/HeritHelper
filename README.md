@@ -1,4 +1,8 @@
-this is meant to make some of the work for the SSM paper easier.
+this is meant to make some of the work for the SSM paper easier. here is some example code to compute h2 for bmi with:
+h1-no covariates
+h2-just pcs
+h3-pcs+education
+
 
 @@@begin code
 
