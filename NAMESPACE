@@ -1,4 +1,4 @@
 export(
-	"manyFE","eb"
+	"make_grm","herit_univar"
 )
 
