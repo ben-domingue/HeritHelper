@@ -7,6 +7,7 @@ herit_univar<-function(df, #data frame with all the variables.
                        cutoff=0.025,
                        out.name="/tmp/hrs_tmp",
                        np=10,
+                       extra.txt=NULL,np=10
                        return.call=FALSE
                        )
 {
@@ -28,6 +29,7 @@ herit_univar<-function(df, #data frame with all the variables.
   } else ""->covar.txt
   ifelse(""==covar.txt & ""==qcovar.txt,"","--reml-est-fix")->fe.txt
   paste("gcta64 --reml --grm ",grm," --grm-cutoff",cutoff,pheno.txt,qcovar.txt,covar.txt,fe.txt,"--out",out.name,"--thread-num",np)->cmd
+  if (!is.null(extra.txt)) paste(cmd,extra.txt)->cmd
   if (!return.call) {
     system(cmd,intern=TRUE)->txt
     #
