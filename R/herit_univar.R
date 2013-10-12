@@ -7,7 +7,7 @@ herit_univar<-function(df, #data frame with all the variables.
                        cutoff=0.025,
                        out.name="/tmp/hrs_tmp",
                        np=10,
-                       extra.txt=NULL,np=10
+                       extra.txt=NULL,
                        return.call=FALSE
                        )
 {
