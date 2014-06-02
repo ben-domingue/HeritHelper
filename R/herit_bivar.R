@@ -28,7 +28,7 @@ herit_bivar<-function(df, #data frame with all the variables.
     paste("--covar ",fn)->covar.txt
   } else ""->covar.txt
   ifelse(""==covar.txt & ""==qcovar.txt,"","--reml-est-fix")->fe.txt
-  paste("gcta64 --reml-bivar 1 2 --grm ",grm," --grm-cutoff",cutoff,pheno.txt,qcovar.txt,covar.txt,fe.txt,"--out",out.name,"--thread-num",np)->cmd
+  paste("gcta64 --reml-bivar 1 2 --grm-gz ",grm," --grm-cutoff",cutoff,pheno.txt,qcovar.txt,covar.txt,fe.txt,"--out",out.name,"--thread-num",np)->cmd
   if (!is.null(extra.txt)) 
     cmd <- paste(cmd, extra.txt)
   system(cmd,intern=TRUE)->txt
