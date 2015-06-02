@@ -1,4 +1,6 @@
 make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name) {
+    tr<-list()
+    #
     getwd()->orig.dir
     system(paste("mkdir ",wd))
     setwd(wd)
@@ -24,22 +26,35 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     system("cat head.txt GWAS.noambig > GWAS2.noambig")
     #get snps from plink files
     system("awk '{print $2}' gen.bim > available.snps")
+    #now get those from gwas
+    read.table("available.snps")->avail
+    read.table("GWAS2.noambig",header=TRUE)->gwas
+    intersect(avail[,1],gwas$SNP)->common
+    length(common) -> tr$common
+    #write.table(common,file="common.snps",quote=FALSE,row.names=FALSE,col.names=FALSE)
+    #
     #Clump data in 2 rounds using plink2
     #1st clumping & extract tops snps for 2nd round
     fun<-function(i) {
-        system(paste("plink --bfile gen2 --chr ",i," --extract available.snps --clump GWAS2.noambig  --clump-p1 1 --clump-p2 1 --clump-r2 .5 --clump-kb 250 --out traitX",i,".round1 --silent",sep=""))
+        paste("plink --bfile gen2 --chr ",i,"  --clump GWAS2.noambig  --clump-p1 1 --clump-p2 1 --clump-r2 .5 --clump-kb 250 --out traitX",i,".round1 --silent",sep="")->cmd
+        system(cmd)
         system(paste("awk '{print $3, $5}' traitX",i,".round1.clumped > traitX",i,".round2.input",sep=""))
         system(paste("awk '{print $3}' traitX",i,".round1.clumped > traitX",i,".extract2",sep=""))
+        cmd
     }
     library(parallel)
     makeCluster(22)->cl #this was based on a big machine with 22 cores. you could not do this on a smaller machine and just run the below
-    clusterApply(cl,1:22,fun)
+    clusterApply(cl,1:22,fun)->garbage
+    garbage[[1]]->tr$clump1
     #2nd clumping & extract tops snps for profile
     fun<-function(i) {
-	system(paste("plink  --bfile gen2 --chr ",i," --extract traitX",i,".extract2 --clump traitX",i,".round2.input --clump-p1 1 --clump-p2 1 --clump-r2 .2 --clump-kb 5000 --out traitX",i,".round2 --silent",sep=""))
+        paste("plink  --bfile gen2 --chr ",i," --extract traitX",i,".extract2 --clump traitX",i,".round2.input --clump-p1 1 --clump-p2 1 --clump-r2 .2 --clump-kb 5000 --out traitX",i,".round2 --silent",sep="")->cmd
+	system(cmd)
 	system(paste("awk '{print $3}' traitX",i,".round2.clumped > traitX",i,".selected",sep=""))
+        cmd
     }
-    clusterApply(cl,1:22,fun)
+    clusterApply(cl,1:22,fun)->garbage
+    garbage[[1]]->tr$clump2
     stopCluster(cl)
     system("cat traitX1.selected traitX2.selected traitX3.selected traitX4.selected traitX5.selected traitX6.selected traitX7.selected traitX8.selected traitX9.selected traitX10.selected traitX11.selected traitX12.selected traitX13.selected traitX14.selected traitX15.selected traitX16.selected traitX17.selected traitX18.selected traitX19.selected traitX20.selected traitX21.selected traitX22.selected > traitX.selected")
     # The traitX"$i".selected files will contain the lists of top snps
@@ -68,11 +83,12 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     ifelse(flip==0 & test$a1.eff=="G","C",test$a1.eff)->test$a1.eff
     test[,c("snp","a1.eff","beta")]->z
     write.table(z,file="score_file.txt",quote=FALSE,row.names=FALSE,col.names=FALSE)
+    nrow(z)->tr$final.n
     #
     setwd(orig.dir)
     system(paste("plink --bfile ",wd,"gen2 --score ",wd,"score_file.txt --out ",out.name,sep=""))
     system(paste("rm -r ",wd))
-    TRUE
+    tr
 }
 
 
