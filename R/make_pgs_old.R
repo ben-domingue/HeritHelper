@@ -1,4 +1,4 @@
-make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name) {
+make_pgs_old<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name) {
     tr<-list()
     #
     getwd()->orig.dir
