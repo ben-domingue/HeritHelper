@@ -1,11 +1,11 @@
-## plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated"
-## gwas.file="/tmp/GWAS.result"
-## wd="/tmp/grs/"
-## out.name<-"smoke"
+plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated"
+gwas.file="/tmp/GWAS.result"
+wd="/tmp/grs/"
+out.name<-"smoke"
 
-## system("awk '{print $2, $4, $5, $11, $9}' ~/gwas_results/tag.evrsmk.tbl > /tmp/GWAS.result") 
-## #make_pgs(out.name="eversmoke") 
-## setwd("/tmp/smoke")
+system("awk '{print $2, $4, $5, $11, $9}' ~/gwas_results/tag.evrsmk.tbl > /tmp/GWAS.result") 
+#make_pgs(out.name="eversmoke") 
+setwd("/tmp/smoke")
 
 make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name) {
     tr<-list()
@@ -103,7 +103,7 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     #################################
     #create score!
     setwd(orig.dir)
-    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --out --silent",out.name,sep=""))
+    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --silent --out ",out.name,sep=""))
     dump("tr",file=paste(out.name,".metadata",sep=""))
     system(paste("rm -r ",wd))
     tr
