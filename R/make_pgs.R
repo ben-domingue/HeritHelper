@@ -19,7 +19,7 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     system(paste("ln -s ",plink.file,".bim ./gen.bim",sep=""))
     system(paste("ln -s ",plink.file,".fam ./gen.fam",sep=""))
     #################################
-    #get agct snps. 
+    #get agct snps from gwas file
     #system(paste("awk '{print $2}' gen.bim > snps.txt"))
     #system("plink --bfile gen --extract snps.txt --make-bed --out gen2")
     #remove ambiguous snps (strand issues). remember that we're only going to use SNPs which have a quickly identifiable strand.
@@ -38,13 +38,13 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     #get snps from plink files
     #system("awk '{print $2}' gen.bim > available.snps")
     system("awk '{print $1}' GWAS.noambig > available.snps")
-    system("plink --bfile gen --extract available.snps --make-bed --out gen")
-    system("wc -l gen.bim",intern=TRUE)->tr$common
+    #system("plink --bfile gen --extract available.snps --make-bed --out gen --silent")
+    #system("wc -l gen.bim",intern=TRUE)->tr$common
     #now get those from gwas
-    #read.table("available.snps")->avail
-    #read.table("GWAS2.noambig",header=TRUE)->gwas
-    #intersect(avail[,1],gwas$SNP)->common
-    #length(common) -> tr$common
+    read.table("available.snps")->gwas
+    read.table("gen.bim",header=TRUE)->data
+    intersect(gwas[,1],data[,2])->common
+    length(common) -> tr$common
     #write.table(common,file="common.snps",quote=FALSE,row.names=FALSE,col.names=FALSE)
     #################################
     #Clump data in 2 rounds using plink2
@@ -103,7 +103,8 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
     #################################
     #create score!
     setwd(orig.dir)
-    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --out ",out.name,sep=""))
+    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --out --silent",out.name,sep=""))
+    dump("tr",file=paste(out.name,".metadata",sep=""))
     system(paste("rm -r ",wd))
     tr
 }
