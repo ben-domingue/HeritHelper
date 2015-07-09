@@ -73,7 +73,7 @@ make_pgs<-function(plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated",g
         stopCluster(cl)
         system("cat traitX1.selected traitX2.selected traitX3.selected traitX4.selected traitX5.selected traitX6.selected traitX7.selected traitX8.selected traitX9.selected traitX10.selected traitX11.selected traitX12.selected traitX13.selected traitX14.selected traitX15.selected traitX16.selected traitX17.selected traitX18.selected traitX19.selected traitX20.selected traitX21.selected traitX22.selected > traitX.selected")
     } else {
-        system("echo "SNP" > /tmp/head.txt")
+        system("echo 'SNP' > /tmp/head.txt")
         system("cat /tmp/head.txt available.snps > traitX.selected")
     }
     #################################
