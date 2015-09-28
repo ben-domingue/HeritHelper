@@ -117,6 +117,14 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     ## ifelse(flip==0 & test$a1.eff=="C","G",test$a1.eff)->test$a1.eff
     ## ifelse(flip==0 & test$a1.eff=="G","C",test$a1.eff)->test$a1.eff
     test[,c("snp","a1.eff","beta")]->z
+    #
+    read.table("gen.bim")->bim
+    bim[,c(2,5)]->bim
+    names(bim)<-c("snp","a1.eff")
+    NULL->z$a1.eff
+    merge(z,bim)->z
+    z[,c("snp","a1.eff","beta")]->z
+    #
     write.table(z,file="score_file.txt",quote=FALSE,row.names=FALSE,col.names=FALSE)
     nrow(z)->tr$final.n
     #################################
