@@ -96,12 +96,26 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     names(effects)<-c("snp","a1.eff","a2.eff","pv","beta")
     NULL->bim$a->bim$b
     merge(bim,effects,by="snp")->test
-    table(test$a1.bim,test$a1.eff)
-    ifelse(test$a1.eff==test$a1.bim | test$a1.eff==test$a2.bim,1,0)->flip
-    ifelse(flip==0 & test$a1.eff=="A","T",test$a1.eff)->test$a1.eff
-    ifelse(flip==0 & test$a1.eff=="T","A",test$a1.eff)->test$a1.eff
-    ifelse(flip==0 & test$a1.eff=="C","G",test$a1.eff)->test$a1.eff
-    ifelse(flip==0 & test$a1.eff=="G","C",test$a1.eff)->test$a1.eff
+    #table(test$a1.bim,test$a1.eff)
+    #get rid of ambig strands from bim (already yanked from gwas data)
+    test$a1.bim=="T" & test$a2.bim=="A" -> i1
+    test$a1.bim=="A" & test$a2.bim=="T" -> i2
+    test[!(i1 | i2),]->test
+    test$a1.bim=="C" & test$a2.bim=="G" -> i1
+    test$a1.bim=="G" & test$a2.bim=="C" -> i2
+    test[!(i1 | i2),]->test
+    #now make everything a/c
+    for (nm in c("a1.bim","a2.bim","a1.eff","a2.eff")) {
+        ifelse(test[[nm]]=="T","A",test[[nm]])->test[[nm]]
+        ifelse(test[[nm]]=="G","C",test[[nm]])->test[[nm]]
+    }
+    ifelse(test$a1.bim!=test$a1.eff,-1*test$beta,test$beta)->test$beta
+    #old
+    ## ifelse(test$a1.eff==test$a1.bim | test$a1.eff==test$a2.bim,1,0)->flip
+    ## ifelse(flip==0 & test$a1.eff=="A","T",test$a1.eff)->test$a1.eff
+    ## ifelse(flip==0 & test$a1.eff=="T","A",test$a1.eff)->test$a1.eff
+    ## ifelse(flip==0 & test$a1.eff=="C","G",test$a1.eff)->test$a1.eff
+    ## ifelse(flip==0 & test$a1.eff=="G","C",test$a1.eff)->test$a1.eff
     test[,c("snp","a1.eff","beta")]->z
     write.table(z,file="score_file.txt",quote=FALSE,row.names=FALSE,col.names=FALSE)
     nrow(z)->tr$final.n
