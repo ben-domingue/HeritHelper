@@ -1,11 +1,8 @@
-## plink.file="/hrsshare/cleaned/v2_hrs_geno_final_translated"
-## gwas.file="/tmp/GWAS.result"
-## wd="/tmp/grs/"
-## out.name<-"smoke"
-
-## system("awk '{print $2, $4, $5, $11, $9}' ~/gwas_results/tag.evrsmk.tbl > /tmp/GWAS.result") 
-## #make_pgs(out.name="eversmoke") 
-## setwd("/tmp/smoke")
+## plink.file="/hrsshare/cleaned-N/hrs_geno_final_translated"
+## gwas.file="~/tmp/GWAS.result"
+## wd="~/tmp/grs/"
+## out.name<-"bmi"
+## make_pgs(plink.file=plink.file,gwas.file=gwas.file,wd=wd,out.name=out.name,clump=FALSE)
 
 make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name,clump=TRUE) {
     tr<-list()
@@ -19,10 +16,7 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     system(paste("ln -s ",plink.file,".bim ./gen.bim",sep=""))
     system(paste("ln -s ",plink.file,".fam ./gen.fam",sep=""))
     #################################
-    #get agct snps from gwas file
-    #system(paste("awk '{print $2}' gen.bim > snps.txt"))
-    #system("plink --bfile gen --extract snps.txt --make-bed --out gen2")
-    #remove ambiguous snps (strand issues). remember that we're only going to use SNPs which have a quickly identifiable strand.
+    #remove ambiguous snps from gwas files (strand issues). remember that we're only going to use SNPs which have a quickly identifiable strand.
     system(paste("awk '{ print $1, $2 $3, $4, $5}' ",gwas.file," > temp"))
     read.table("temp")->tmp
     toupper(tmp[,2])->tmp[,2]
@@ -31,23 +25,12 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     "awk '{ if ($2 == ffACff || $2 == ffAGff || $2 == ffCAff || $2 == ffCTff || $2 == ffGAff || $2== ffGTff || $2 == ffTCff || $2 == ffTGff ) print $0}' temp > GWAS.noambig"->txt
     gsub('ff','"',txt)->txt
     system(txt)
-    #
-    system('echo "SNP Allele1Allele2 P W" > head.txt')
-    system("cat head.txt GWAS.noambig > GWAS2.noambig")
-    #################################
-    #get snps from plink files
-    #system("awk '{print $2}' gen.bim > available.snps")
-    system("awk '{print $1}' GWAS.noambig > available.snps")
-    #system("plink --bfile gen --extract available.snps --make-bed --out gen --silent")
-    #system("wc -l gen.bim",intern=TRUE)->tr$common
-    #now get those from gwas
-    read.table("available.snps")->gwas
-    read.table("gen.bim",header=TRUE)->data
-    intersect(gwas[,1],data[,2])->common
-    length(common) -> tr$common
-    #write.table(common,file="common.snps",quote=FALSE,row.names=FALSE,col.names=FALSE)
+    system("awk '{print $1}' GWAS.noambig > GWAS.snps")
     #################################
     if (clump) {
+        #this just adds a header to a file.
+        system('echo "SNP Allele1Allele2 P W" > head.txt')
+        system("cat head.txt GWAS.noambig > GWAS2.noambig")
         #Clump data in 2 rounds using plink2
         #1st clumping & extract tops snps for 2nd round
         fun<-function(i) {
@@ -74,15 +57,13 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
         system("cat traitX1.selected traitX2.selected traitX3.selected traitX4.selected traitX5.selected traitX6.selected traitX7.selected traitX8.selected traitX9.selected traitX10.selected traitX11.selected traitX12.selected traitX13.selected traitX14.selected traitX15.selected traitX16.selected traitX17.selected traitX18.selected traitX19.selected traitX20.selected traitX21.selected traitX22.selected > traitX.selected")
     } else {
         system("echo 'SNP' > /tmp/head.txt")
-        system("cat /tmp/head.txt available.snps > traitX.selected")
+        system("cat /tmp/head.txt GWAS.snps > traitX.selected")
     }
     #################################
-    # The traitX"$i".selected files will contain the lists of top snps
-    # Merge the alleles, effect & P values onto these files
-    #R
+    #this is going to prune the gwas files down to just the (1) clumped & (2) non-ambig snps (the latter are those from the GWAS.snps file)
     read.table("traitX.selected",header=TRUE)->selected
     read.table(gwas.file,header=TRUE)->effects
-    #
+    #this is just in case any snps are duplicated in gwas files.
     effects[!duplicated(effects),]->effects
     #
     effects[,1] %in% selected$SNP -> index
@@ -110,15 +91,9 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
         ifelse(test[[nm]]=="G","C",test[[nm]])->test[[nm]]
     }
     ifelse(test$a1.bim!=test$a1.eff,-1*test$beta,test$beta)->test$beta
-    #old
-    ## ifelse(test$a1.eff==test$a1.bim | test$a1.eff==test$a2.bim,1,0)->flip
-    ## ifelse(flip==0 & test$a1.eff=="A","T",test$a1.eff)->test$a1.eff
-    ## ifelse(flip==0 & test$a1.eff=="T","A",test$a1.eff)->test$a1.eff
-    ## ifelse(flip==0 & test$a1.eff=="C","G",test$a1.eff)->test$a1.eff
-    ## ifelse(flip==0 & test$a1.eff=="G","C",test$a1.eff)->test$a1.eff
     test[,c("snp","a1.eff","beta")]->z
-    #
-    read.table("gen.bim")->bim
+    #now read the bim file back in and overwrite the old allele names
+    read.table("gen.bim")->bim 
     bim[,c(2,5)]->bim
     names(bim)<-c("snp","a1.eff")
     NULL->z$a1.eff
