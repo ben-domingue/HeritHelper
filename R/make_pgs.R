@@ -64,7 +64,7 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     read.table("traitX.selected",header=TRUE)->selected
     read.table(gwas.file,header=TRUE)->effects
     #this is just in case any snps are duplicated in gwas files.
-    effects[!duplicated(effects),]->effects
+    effects[!duplicated(effects[,1]),]->effects
     #
     effects[,1] %in% selected$SNP -> index
     effects[index,]->effects
