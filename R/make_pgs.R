@@ -4,30 +4,42 @@
 ## out.name<-"bmi"
 ## make_pgs(plink.file=plink.file,gwas.file=gwas.file,wd=wd,out.name=out.name,clump=FALSE)
 
-make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name,clump=TRUE) {
-    tr<-list()
+
+
+
+
+make_pgs<-function(plink.file=NULL,gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",out.name,clump=TRUE) {
+    #plink.file self-explanatory, the plink file that will be used.
+    #gwas.file the set of gwas results. they need to be in the right format when you feed them to make_pgs: marker name, allele 1, allele 2, p value, effect size
+    #wd the working directory. need to change if using windows.
+    #clump: do you want to compute a pgs based on "clumped" snps?
     #################################
+    #0. preamble
+    if (is.null(plink.file)) stop("need to pass plink file")
+    options(stringsAsFactors=FALSE)
+    tr<-list()
     getwd()->orig.dir
     system(paste("mkdir ",wd))
     setwd(wd)
-    #################################
-    #i'm just creating symbolic links here so that i can work in one directory. not really imperative that you do something like this, but if you don't youll need to change directory stuff downstream.
+    system("unlink gen.bim && unlink gen.bed && unlink gen.fam")
+    ##i'm just creating symbolic links here so that i can work in one directory. not really imperative that you do something like this, but if you don't youll need to change directory stuff downstream.
     system(paste("ln -s ",plink.file,".bed ./gen.bed",sep=""))
     system(paste("ln -s ",plink.file,".bim ./gen.bim",sep=""))
     system(paste("ln -s ",plink.file,".fam ./gen.fam",sep=""))
     #################################
-    #remove ambiguous snps from gwas files (strand issues). remember that we're only going to use SNPs which have a quickly identifiable strand.
+    #1. remove ambiguous snps from gwas files (strand issues). remember that we're only going to use SNPs which have a quickly identifiable strand.
     system(paste("awk '{ print $1, $2 $3, $4, $5}' ",gwas.file," > temp"))
     read.table("temp")->tmp
     toupper(tmp[,2])->tmp[,2]
     write.table(tmp,file="temp",quote=FALSE,row.names=FALSE,col.names=FALSE)
-    #
+    #the below "ff" strings are inserted just to make life at the bash command line easier as otherwise one has too many levels of quotes to quickly parse.
     "awk '{ if ($2 == ffACff || $2 == ffAGff || $2 == ffCAff || $2 == ffCTff || $2 == ffGAff || $2== ffGTff || $2 == ffTCff || $2 == ffTGff ) print $0}' temp > GWAS.noambig"->txt
     gsub('ff','"',txt)->txt
     system(txt)
     system("awk '{print $1}' GWAS.noambig > GWAS.snps")
     #################################
-    if (clump) {
+    #2. clumping!
+    if (clump) { #only gets run when you are clumping
         #this just adds a header to a file.
         system('echo "SNP Allele1Allele2 P W" > head.txt')
         system("cat head.txt GWAS.noambig > GWAS2.noambig")
@@ -41,7 +53,8 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
             cmd
         }
         library(parallel)
-        makeCluster(22)->cl #this was based on a big machine with 22 cores. you could not do this on a smaller machine and just run the below
+        detectCores()->nw
+        makeCluster(nw)->cl 
         clusterApply(cl,1:22,fun)->garbage
         garbage[[1]]->tr$clump1
         #2nd clumping & extract tops snps for profile
@@ -55,29 +68,30 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
         garbage[[1]]->tr$clump2
         stopCluster(cl)
         system("cat traitX1.selected traitX2.selected traitX3.selected traitX4.selected traitX5.selected traitX6.selected traitX7.selected traitX8.selected traitX9.selected traitX10.selected traitX11.selected traitX12.selected traitX13.selected traitX14.selected traitX15.selected traitX16.selected traitX17.selected traitX18.selected traitX19.selected traitX20.selected traitX21.selected traitX22.selected > traitX.selected")
-    } else {
+    } else { #gets run if you don't clump. just making a traitX.selected file available for later work.
         system("echo 'SNP' > /tmp/head.txt")
         system("cat /tmp/head.txt GWAS.snps > traitX.selected")
     }
     #################################
+    #3. Cleaning plink files
     #this is going to prune the gwas files down to just the (1) clumped & (2) non-ambig snps (the latter are those from the GWAS.snps file)
     read.table("traitX.selected",header=TRUE)->selected
     read.table(gwas.file,header=TRUE)->effects
     #this is just in case any snps are duplicated in gwas files.
     effects[!duplicated(effects[,1]),]->effects
-    #
+    #first the clumped SNPs
     effects[,1] %in% selected$SNP -> index
     effects[index,]->effects
     effects[,2]<-toupper(effects[,2])
     effects[,3]<-toupper(effects[,3])
-    #################################
+    #now the hard part: ambig snps
     #make sure strands are aligned
     bim <- read.table(file="gen.bim",header=FALSE)
     names(bim)<-c("chr","snp","a","b","a1.bim","a2.bim")
     names(effects)<-c("snp","a1.eff","a2.eff","pv","beta")
     NULL->bim$a->bim$b
     merge(bim,effects,by="snp")->test
-    #table(test$a1.bim,test$a1.eff)
+    #table(test$a1.bim,test$a1.eff) #useful if you want to see what is going on.
     #get rid of ambig strands from bim (already yanked from gwas data)
     test$a1.bim=="T" & test$a2.bim=="A" -> i1
     test$a1.bim=="A" & test$a2.bim=="T" -> i2
@@ -85,12 +99,12 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     test$a1.bim=="C" & test$a2.bim=="G" -> i1
     test$a1.bim=="G" & test$a2.bim=="C" -> i2
     test[!(i1 | i2),]->test
-    #now make everything a/c
+    #now make everything a/c. this is so that we can make sense of the risk allele
     for (nm in c("a1.bim","a2.bim","a1.eff","a2.eff")) {
         ifelse(test[[nm]]=="T","A",test[[nm]])->test[[nm]]
         ifelse(test[[nm]]=="G","C",test[[nm]])->test[[nm]]
     }
-    ifelse(test$a1.bim!=test$a1.eff,-1*test$beta,test$beta)->test$beta
+    ifelse(test$a1.bim!=test$a1.eff,-1*test$beta,test$beta)->test$beta #flipping
     test[,c("snp","a1.eff","beta")]->z
     #now read the bim file back in and overwrite the old allele names
     read.table("gen.bim")->bim 
@@ -103,11 +117,11 @@ make_pgs<-function(plink.file="hrs_geno_final_translated",gwas.file="/tmp/GWAS.r
     write.table(z,file="score_file.txt",quote=FALSE,row.names=FALSE,col.names=FALSE)
     nrow(z)->tr$final.n
     #################################
-    #create score!
+    #4. create score!
     setwd(orig.dir)
     system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --silent --out ",out.name,sep=""))
     dump("tr",file=paste(out.name,".metadata",sep=""))
-    system(paste("rm -r ",wd))
+    #system(paste("rm -r ",wd))
     tr
 }
 
