@@ -119,7 +119,7 @@ make_pgs<-function(plink.file=NULL,gwas.file="/tmp/GWAS.result",wd="/tmp/grs/",o
     #################################
     #4. create score!
     setwd(orig.dir)
-    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt --silent --out ",out.name,sep=""))
+    system(paste("plink --bfile ",wd,"gen --score ",wd,"score_file.txt no-mean-imputation --out ",out.name,sep=""),intern=TRUE)
     dump("tr",file=paste(out.name,".metadata",sep=""))
     #system(paste("rm -r ",wd))
     tr

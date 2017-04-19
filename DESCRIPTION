@@ -1,6 +1,6 @@
 Package: HeritHelper
 Title: Helping with the computation of heritabilities using GCTA (on ozzy).
-Version: 0.0.1
+Version: 0.0.2
 Date: 2013-10-01
 Author: Ben Domingue <ben.domingue@gmail.com>
 Maintainer: Ben Domingue <ben.domingue@gmail.com>
